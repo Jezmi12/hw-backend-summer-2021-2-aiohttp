@@ -17,7 +17,6 @@ class TestHandleUpdates:
                             from_id=1,
                             text="kek",
                         ),
-
                     ),
                 )
             ]

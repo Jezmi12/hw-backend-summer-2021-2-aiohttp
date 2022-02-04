@@ -48,9 +48,9 @@ class VkApiAccessor(BaseAccessor):
         url = self._build_query(
             host='https://api.vk.com/method/',
             method='groups.getLongPollServer',
-            params={'group_id': '206725431',
+            params={'group_id': {self.app.config.bot.group_id},
                     'access_token':
-                        '523f9336c303fed692990967079cf930cac6e58e121b60e8e21340841cc619aaa9875a0f24bfd5615a4c4'})
+                        self.app.config.bot.token})
 
         async with self.session.get(url) as resp:
             json_data = await resp.json()
@@ -68,11 +68,11 @@ class VkApiAccessor(BaseAccessor):
 
                 updates = list()
                 for update in json_data['updates']:
-                    print(update)
                     if update['type'] == 'message_new':
                         from_id = update['object']['message']['from_id']
-                        updates.append(Update(type=update['type'], object=UpdateObject(message=UpdateMessage(text='', id=0,
-                                                                                                         from_id=from_id))))
+                        updates.append(Update(type=update['type'], object=UpdateObject(
+                            message=UpdateMessage(text='', id=0,
+                                                  from_id=from_id))))
 
                 if len(updates):
                     await self.app.store.bots_manager.handle_updates(updates)
@@ -85,7 +85,7 @@ class VkApiAccessor(BaseAccessor):
                     'message': message.text,
                     'random_id': randint(0, 32000),
                     'access_token':
-                        '523f9336c303fed692990967079cf930cac6e58e121b60e8e21340841cc619aaa9875a0f24bfd5615a4c4'})
+                        self.app.config.bot.token})
 
         if self.session is not None:
             async with self.session.get(url) as resp:

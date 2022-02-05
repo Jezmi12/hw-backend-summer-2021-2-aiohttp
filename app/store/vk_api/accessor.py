@@ -22,9 +22,6 @@ class VkApiAccessor(BaseAccessor):
         self.ts: Optional[int] = None
 
     async def connect(self, app: "Application"):
-        # TODO: добавить создание aiohttp ClientSession,
-        #  получить данные о long poll сервере с помощью метода groups.getLongPollServer
-        #  вызвать метод start у Poller
         self.session = ClientSession(connector=TCPConnector(ssl=True))
 
         await self._get_long_poll_service()
@@ -32,7 +29,6 @@ class VkApiAccessor(BaseAccessor):
         await self.poller.start()
 
     async def disconnect(self, app: "Application"):
-        # TODO: закрыть сессию и завершить поллер
         if self.session is not None:
             await self.session.close()
 
@@ -48,9 +44,8 @@ class VkApiAccessor(BaseAccessor):
         url = self._build_query(
             host='https://api.vk.com/method/',
             method='groups.getLongPollServer',
-            params={'group_id': {self.app.config.bot.group_id},
-                    'access_token':
-                        self.app.config.bot.token})
+            params={'group_id': self.app.config.bot.group_id,
+                    'access_token': self.app.config.bot.token})
 
         async with self.session.get(url) as resp:
             json_data = await resp.json()
@@ -59,7 +54,13 @@ class VkApiAccessor(BaseAccessor):
             self.ts = json_data['response']['ts']
 
     async def poll(self):
-        url = self._build_query(self.server, '', {'act': 'a_check', 'key': self.key, 'ts': self.ts, 'wait': 25})
+        url = self._build_query(self.server, '', {
+            'act': 'a_check',
+            'key': self.key,
+            'ts': self.ts,
+            'wait': 25
+        }
+                                )
 
         async with self.session.get(url) as resp:
             json_data = await resp.json()
@@ -71,8 +72,13 @@ class VkApiAccessor(BaseAccessor):
                     if update['type'] == 'message_new':
                         from_id = update['object']['message']['from_id']
                         updates.append(Update(type=update['type'], object=UpdateObject(
-                            message=UpdateMessage(text='', id=0,
-                                                  from_id=from_id))))
+                            message=UpdateMessage(
+                                text='', id=0,
+                                from_id=from_id
+                            )
+                        )
+                                              )
+                                       )
 
                 if len(updates):
                     await self.app.store.bots_manager.handle_updates(updates)
@@ -81,11 +87,13 @@ class VkApiAccessor(BaseAccessor):
         url = self._build_query(
             host='https://api.vk.com/method/',
             method='messages.send',
-            params={'peer_id': message.user_id,
-                    'message': message.text,
-                    'random_id': randint(0, 32000),
-                    'access_token':
-                        self.app.config.bot.token})
+            params={
+                'peer_id': message.user_id,
+                'message': message.text,
+                'random_id': randint(0, 32000),
+                'access_token': self.app.config.bot.token
+            }
+        )
 
         if self.session is not None:
             async with self.session.get(url) as resp:
